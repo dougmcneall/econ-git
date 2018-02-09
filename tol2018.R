@@ -1,6 +1,6 @@
 # tol2018.R
 
-dat <- read.table('tol2018.txt', header = TRUE)
+dat = read.table('tol2018.txt', header = TRUE)
 
 attach(dat)
 warming2 = warming^2
