@@ -42,12 +42,19 @@ library(segmented)
 fitseg = segmented(fit0, seg.Z = ~warming)
 predseg = predict(fitseg, newdata = newdata, se.fit = TRUE )
 
+pdf('segmented_vs_parabolic.pdf')
 plot(dat)
-lines(newdata$warming, predseg$fit)
+lines(newdata$warming, predseg$fit, lwd = 2)
 lines(newdata$warming, predseg$fit+(2*predseg$se.fit), lty = 'dashed')
 lines(newdata$warming, predseg$fit-(2*predseg$se.fit), lty = 'dashed')
+
+lines(newdata$warming, pred1$fit, col = 'red', lwd = 2)
+lines(newdata$warming, pred1$fit+(2*pred1$se.fit), lty = 'dashed', col = 'red')
+lines(newdata$warming, pred1$fit-(2*pred1$se.fit), lty = 'dashed', col = 'red')
+legend('topright', legend = c('piecewise linear','parabolic'), lwd = 2, col = c('black', 'red'))
 abline(h = 0)
 abline(v = 0)
+dev.off()
 
 
 # find the relative likelihood of the various fits
