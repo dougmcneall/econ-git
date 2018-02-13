@@ -1,9 +1,16 @@
 # tol2018.R
 
-dat = read.table('tol2018.txt', header = TRUE)
+dat = read.table('https://raw.githubusercontent.com/dougmcneall/econ-git/master/tol2018.txt',
+                 header = TRUE)
 
+fitorder = c('PWL', 'linear', 'parabolic','quadratic', 'exp',
+             'double_exp', 'T^6', 'T^7')
 attach(dat)
 warming2 = warming^2
+warming6 = warming^6
+warming7 = warming^7
+warmingexp = exp(warming)
+warmingexpexp = exp(exp(warming))
 
 # fit a linear model (useful for later)
 fit0 = lm(impact ~ warming) 
@@ -22,6 +29,13 @@ lines(newdata$warming, pred1$fit-(2*pred1$se.fit), lty = 'dashed')
 
 # fit a simple polynomial
 fit2 = lm(impact ~ warming + warming2)
+# fit exponential
+fit3 = lm(impact ~ warmingexp)
+# fit double exponential
+fit4 = lm(impact ~ warmingexpexp)
+# miss fit5 for labelling purposes :)
+fit6 = lm(impact ~ warming2 + warming6)
+fit7 = lm(impact ~ warming2 + warming7)
 
 # piecewise linear
 library(segmented)
@@ -43,13 +57,19 @@ rl = function(x){
   out
 }
 # piecewise linear actually less likely using AIC?
-rl(c(AIC(fitseg), AIC(fit0), AIC(fit1), AIC(fit2)))
+aicvec = rl(c(AIC(fitseg), AIC(fit0), AIC(fit1), AIC(fit2), AIC(fit3), AIC(fit4), AIC(fit6), AIC(fit7)))
+names(aicvec) = fitorder
 
 # a look at the residuals
+sqrt(mean(fitseg$residuals^2))
 sqrt(mean(fit0$residuals^2))
 sqrt(mean(fit1$residuals^2))
 sqrt(mean(fit2$residuals^2))
-sqrt(mean(fitseg$residuals^2))
+sqrt(mean(fit3$residuals^2))
+sqrt(mean(fit4$residuals^2))
+sqrt(mean(fit6$residuals^2))
+sqrt(mean(fit7$residuals^2))
+
 
 plot(resid(fit1))
 abline(h = 0)
@@ -63,10 +83,20 @@ points(resid(fitseg), col = 'red')
 # https://www.theanalysisfactor.com/what-are-nested-models/
 # https://en.wikipedia.org/wiki/Likelihood-ratio_test
 
-# These give similar answers to Tol in terms of
+# These give (kind of) similar answers to Tol in terms of
 # likelihood ratio
-exp(logLik(fit1))/exp(logLik(fitseg))
-exp(logLik(fit0))/exp(logLik(fitseg))
+expl = c(exp(logLik(fitseg)), exp(logLik(fit0)), exp(logLik(fit1)), exp(logLik(fit2)),
+            exp(logLik(fit3)), exp(logLik(fit4)), exp(logLik(fit6)), exp(logLik(fit7)))
+
+# relative likelihood ratio, expressed in a similar
+# way to the spreadsheet
+rexpl = (expl/sum(expl)) *100
+names(rexpl) = fitorder
+
+# Relative likelihood ratio, calculated by aic, expressed in the same way
+raic = aicvec/sum(aicvec) * 100
+
+cbind(rexpl, raic)
 
 # Check that AIC and loglikelihood are being used in the same way
 npar = 3
@@ -87,8 +117,6 @@ npar = 5
 
 # Looks like the PWL fit has 5 parameters, which is why it is being more heavily
 # penalised by AIC measure.
-
-
 
 # What do the fits look like when removing Tol2002?
 dat.trunc = dat[-15, ]
