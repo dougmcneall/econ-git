@@ -12,14 +12,22 @@ warming7 = warming^7
 warmingexp = exp(warming)
 warmingexpexp = exp(exp(warming))
 
-# fit a linear model (useful for later)
+# fit a linear model
 fit0 = lm(impact ~ warming) 
 
 # fit a parabola
 fit1 = lm(impact ~ warming2)
-warmingseq = seq(from = -1, to = 6, by = 0.1)
+warmingseq = seq(from = -1, to = 6.5, by = 0.1)
+#newdata = data.frame(warming = warmingseq,
+#                     warming2 = warmingseq^2)
+
 newdata = data.frame(warming = warmingseq,
-                     warming2 = warmingseq^2)
+                     warming2 = warmingseq^2,
+                     warmingexp = exp(warmingseq),
+                     warmingexpexp = exp(exp(warmingseq)),
+                     warming6 = warmingseq^6,
+                     warming7 = warmingseq^7
+                     )
 
 pred1 = predict(fit1, newdata = newdata, se.fit = TRUE)
 plot(dat)
@@ -57,6 +65,24 @@ abline(v = 0)
 dev.off()
 
 
+pred0= predict(fit0, newdata = newdata, se.fit = TRUE )
+pred2= predict(fit2, newdata = newdata, se.fit = TRUE )
+pred3= predict(fit3, newdata = newdata, se.fit = TRUE )
+pred4= predict(fit4, newdata = newdata, se.fit = TRUE )
+pred6= predict(fit6, newdata = newdata, se.fit = TRUE )
+pred7= predict(fit7, newdata = newdata, se.fit = TRUE )
+
+# Plot all the predictions
+plot(dat)
+lines(newdata$warming, predseg$fit, col = 'black', lwd = 2)
+lines(newdata$warming, pred0$fit, col = 'tomato2', lwd = 2)
+lines(newdata$warming, pred1$fit, col = 'red', lwd = 2)
+lines(newdata$warming, pred2$fit, col = 'blue', lwd = 2)
+lines(newdata$warming, pred3$fit, col = 'green', lwd = 2)
+lines(newdata$warming, pred4$fit, col = 'grey', lwd = 2)
+lines(newdata$warming, pred6$fit, col = 'pink', lwd = 2)
+lines(newdata$warming, pred7$fit, col = 'orange', lwd = 2)
+
 # find the relative likelihood of the various fits
 # https://en.wikipedia.org/wiki/Akaike_information_criterion#How_to_apply_AIC_in_practice
 rl = function(x){
@@ -67,20 +93,6 @@ rl = function(x){
 aicvec = rl(c(AIC(fitseg), AIC(fit0), AIC(fit1), AIC(fit2), AIC(fit3), AIC(fit4), AIC(fit6), AIC(fit7)))
 names(aicvec) = fitorder
 
-# a look at the residuals
-sqrt(mean(fitseg$residuals^2))
-sqrt(mean(fit0$residuals^2))
-sqrt(mean(fit1$residuals^2))
-sqrt(mean(fit2$residuals^2))
-sqrt(mean(fit3$residuals^2))
-sqrt(mean(fit4$residuals^2))
-sqrt(mean(fit6$residuals^2))
-sqrt(mean(fit7$residuals^2))
-
-
-plot(resid(fit1))
-abline(h = 0)
-points(resid(fitseg), col = 'red')
 
 # I think that this is how Tol is, in effect, doing his likelihood
 # ratio test. This isn't appropriate for non-nested models.
@@ -101,7 +113,7 @@ rexpl = (expl/sum(expl)) *100
 names(rexpl) = fitorder
 
 # Relative likelihood ratio, calculated by aic, expressed in the same way
-raic = aicvec/sum(aicvec) * 100
+raic = (aicvec/sum(aicvec)) * 100
 
 cbind(rexpl, raic)
 
@@ -132,6 +144,7 @@ calcAICdiff = function(fit){
   rss = sum(fit$residuals^2)
   # I think this should be longer (i.e. include variance), but shouldn't
   # matter if we are just comparing AIC in similar models
+  # i.e., it's the difference in parameters that matters.
   k = length(coef(fit)) 
   n = length(fit$residuals)
   
@@ -151,6 +164,31 @@ testAIC = rl(c(calcAICdiff(fitseg),
 
 # These should be the same
 cbind(testAIC, aicvec)
+
+# Can we reproduce the likelihood (and relative likelihood)
+# Values from the spreadsheet?
+toll = function(fit){
+  # this is my attempt at backing out the likelihood formula
+  # from the spreadsheet, but it doesn't seem to produce the 
+  # same results.
+  
+  rss = sum(fit$residuals^2)
+  k = length(coef(fit)) -1 # don't count the intercept, apparently
+  n = length(fit$residuals)
+  ll = -(rss/2) /  (  (sqrt(rss/(n-k)))^2 - n*(log(sqrt(rss/(n-k)))))
+  
+  ll
+}
+tollvec = c(exp(toll(fitseg)), exp(toll(fit0)), exp(toll(fit1)), exp(toll(fit2)), 
+            exp(toll(fit3)), exp(toll(fit4)), exp(toll(fit6)), exp(toll(fit7))) 
+
+# relative likelihood
+rtol = (tollvec/sum(tollvec))*100
+names(rtol) = fitorder
+
+#table of the relative likelihood measures
+cbind(rtol, raic, rexpl)
+
 
 # --------------------------------------------------------------------
 # What do the fits look like when removing Tol2002?
