@@ -125,7 +125,37 @@ npar = 5
 # Looks like the PWL fit has 5 parameters, which is why it is being more heavily
 # penalised by AIC measure.
 
+# hand calulate AIC using only residuals and number
+# of parameters in the model
+calcAICdiff = function(fit){
+  
+  rss = sum(fit$residuals^2)
+  # I think this should be longer (i.e. include variance), but shouldn't
+  # matter if we are just comparing AIC in similar models
+  k = length(coef(fit)) 
+  n = length(fit$residuals)
+  
+  aic = 2*k + n*(log(rss))
+  aic
+}
+
+testAIC = rl(c(calcAICdiff(fitseg),
+            calcAICdiff(fit0),
+            calcAICdiff(fit1),
+            calcAICdiff(fit2), 
+            calcAICdiff(fit3), 
+            calcAICdiff(fit4),
+            calcAICdiff(fit6),
+            calcAICdiff(fit7))
+          )
+
+# These should be the same
+cbind(testAIC, aicvec)
+
+# --------------------------------------------------------------------
 # What do the fits look like when removing Tol2002?
+# --------------------------------------------------------------------
+
 dat.trunc = dat[-15, ]
 attach(dat.trunc)
 plot(dat.trunc, ylim = c(-7,5))
