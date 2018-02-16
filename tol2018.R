@@ -1,7 +1,10 @@
 # tol2018.R
 
+# NOTE need to refactor to remove intercepts!
 dat = read.table('https://raw.githubusercontent.com/dougmcneall/econ-git/master/tol2018.txt',
                  header = TRUE)
+
+tol_fitted = read.table('tol2018_fitted_values.txt', header = TRUE)
 
 fitorder = c('PWL', 'linear', 'parabolic','quadratic', 'exp',
              'double_exp', 'T^6', 'T^7')
@@ -13,13 +16,20 @@ warmingexp = exp(warming)
 warmingexpexp = exp(exp(warming))
 
 # fit a linear model
-fit0 = lm(impact ~ warming) 
-
+fit0 = lm(impact ~ 0 + warming) 
 # fit a parabola
-fit1 = lm(impact ~ warming2)
+fit1 = lm(impact ~ 0 + warming2) 
+# fit a simple polynomial
+fit2 = lm(impact ~ 0+ warming + warming2)
+# fit exponential
+fit3 = lm(impact ~ 0 + warmingexp)
+# fit double exponential
+fit4 = lm(impact ~ 0 + warmingexpexp)
+# miss fit5 for labelling purposes :)
+fit6 = lm(impact ~ 0 + warming2 + warming6)
+fit7 = lm(impact ~ 0 + warming2 + warming7)
+
 warmingseq = seq(from = -1, to = 6.5, by = 0.1)
-#newdata = data.frame(warming = warmingseq,
-#                     warming2 = warmingseq^2)
 
 newdata = data.frame(warming = warmingseq,
                      warming2 = warmingseq^2,
@@ -35,19 +45,19 @@ lines(newdata$warming, pred1$fit)
 lines(newdata$warming, pred1$fit+(2*pred1$se.fit), lty = 'dashed')
 lines(newdata$warming, pred1$fit-(2*pred1$se.fit), lty = 'dashed')
 
-# fit a simple polynomial
-fit2 = lm(impact ~ warming + warming2)
-# fit exponential
-fit3 = lm(impact ~ warmingexp)
-# fit double exponential
-fit4 = lm(impact ~ warmingexpexp)
-# miss fit5 for labelling purposes :)
-fit6 = lm(impact ~ warming2 + warming6)
-fit7 = lm(impact ~ warming2 + warming7)
+plot(dat, pch = 19, xlim = c(-1, 6), ylim = c(-9, 3))
+points(warming, fit1$fitted.values, col = 'red', pch = 19)
+points(warming, c(tsq, recursive = TRUE), col = 'pink', pch = 19)
+
+plot(dat, pch = 19, xlim = c(-1, 6), ylim = c(-9, 3))
+for(i in 1:ncol(tol_fitted)){
+  points(warming, tol_fitted[,i], type = 'o')
+  
+}
 
 # piecewise linear
 library(segmented)
-fitseg = segmented(fit0, seg.Z = ~warming)
+fitseg = segmented(fit0, seg.Z = ~0 + warming)
 predseg = predict(fitseg, newdata = newdata, se.fit = TRUE )
 
 pdf('segmented_vs_parabolic.pdf')
@@ -63,7 +73,6 @@ legend('topright', legend = c('piecewise linear','parabolic'), lwd = 2, col = c(
 abline(h = 0)
 abline(v = 0)
 dev.off()
-
 
 pred0= predict(fit0, newdata = newdata, se.fit = TRUE )
 pred2= predict(fit2, newdata = newdata, se.fit = TRUE )
@@ -187,7 +196,11 @@ rtol = (tollvec/sum(tollvec))*100
 names(rtol) = fitorder
 
 #table of the relative likelihood measures
-cbind(rtol, raic, rexpl)
+out = cbind(round(rtol, 3), round(raic, 3), round(rexpl, 3))
+
+colnames(out) = c('Tol_RL', 'AIC', 'R_RL')
+print(out)
+
 
 
 # --------------------------------------------------------------------
