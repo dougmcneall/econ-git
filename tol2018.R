@@ -253,13 +253,15 @@ testfun = function(fit, rez=NULL){
 rtestfun = (testfunvec/sum(testfunvec))*100
 names(rtestfun) = fitorder
 
-RLtab = cbind(round(rtol), round(rexpl), round(rtestfun), round(raic))
-
+# Table of relative likelihoods.
 RLtab = round(cbind(rtestfun, rtol, rexpl, raic, rbic))
 rownames(RLtab) = fitorder
 print(RLtab)
 
 # Here's Tol's function working on the fits from Tol's own spreadsheet.
+# This should reproduce Tol's results, apart from mistakenly swapped
+# Parabolic and Quadratic labels.
+# It doesn't, meaning I must have the calculation slighly wrong
 tolfit = c(exp(toll(fitseg, rez = tol_fitted[,2] - impact)),
            exp(toll(fit0, rez = tol_fitted[,8] - impact)),
            exp(toll(fit1, rez = tol_fitted[,3] - impact)),
@@ -271,8 +273,9 @@ tolfit = c(exp(toll(fitseg, rez = tol_fitted[,2] - impact)),
 )
 rtolfit = (tolfit/sum(tolfit))*100
 
-# Here's the first-principles likelihood calculation, working on
-# Tol's fitted values from the spreadsheet
+# Here's my first-principles likelihood calculation, working on
+# Tol's fitted values from the spreadsheet. This DOES reproduce the
+# results from the spreadsheet.
 testfunvec_tol = c(exp(testfun(fitseg, rez = tol_fitted[,2] - impact)),
                    exp(testfun(fit0, rez = tol_fitted[,8] - impact)),
                    exp(testfun(fit1, rez = tol_fitted[,3] - impact)),
@@ -293,6 +296,53 @@ RL_tolfits = round(cbind(rtolfit, rtestfun_tol ))
 rownames(RL_tolfits) = fitorder
 print(RL_tolfits)
 
+
+# AIC with from-first-principles likelihood
+fp_AIC = function(fit, rez=NULL){
+  
+  if(is.null(rez)){
+    rez = fit$residuals
+  }
+  
+  L = exp(testfun(fit, rez = rez))
+  k = length(coef(fit)) +1
+
+  aic = (2*k)  - 2*log(L) 
+  aic
+  
+}
+
+# This is what happens when you apply AIC with from-first-principles
+# likelihood to Tol's fits
+rl_AIC_fp_tolfits = rl(c(fp_AIC(fitseg, rez = tol_fitted[,2] - impact),
+                   fp_AIC(fit0, rez = tol_fitted[,8] - impact),
+                   fp_AIC(fit1, rez = tol_fitted[,3] - impact),
+                   fp_AIC(fit2, rez = tol_fitted[,1] - impact),
+                   fp_AIC(fit3, rez = tol_fitted[,6] - impact),
+                   fp_AIC(fit4, rez = tol_fitted[,7] - impact),
+                   fp_AIC(fit6, rez = tol_fitted[,5] - impact),
+                   fp_AIC(fit7, rez = tol_fitted[,4] - impact)
+)
+)
+round((rl_AIC_fp_tolfits/sum(rl_AIC_fp_tolfits))*100)
+
+# This is what happens when you apply AIC with from-first-principles
+# likelihood to the correct fits
+rl_AIC_fp = rl(c(fp_AIC(fitseg),
+                 fp_AIC(fit0),
+                 fp_AIC(fit1),
+                 fp_AIC(fit2),
+                 fp_AIC(fit3),
+                 fp_AIC(fit4),
+                 fp_AIC(fit6),
+                 fp_AIC(fit7)
+)
+)
+
+round((rl_AIC_fp/sum(rl_AIC_fp))*100)
+
+# First principles likelihood using Tol's RL method 
+  
 
 # --------------------------------------------------------------------
 # What do the fits look like when removing Tol2002?
